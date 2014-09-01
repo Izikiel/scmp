@@ -1,0 +1,29 @@
+
+Set initial conditions:
+	for i=2 to ii-1
+		u2(i)=0
+		u1(i)=0
+	end
+
+Set boundary conditions:
+	u2(1)=10
+	u1(1)=10
+	u2(ii)=-5
+	u1(ii)=-5
+
+Simulate:
+	time_error=1000;
+	time_tolerance=0.01;
+	while time_error>time_tolerance
+
+		plot(u1)
+
+		for i=2 to ii-1
+			u2(i)=F(u1(i+1),u1(i),u1(i-1))
+		end
+
+		time_error = calcError(u2,u1)
+
+		u1=u2
+	end
+
