@@ -3,10 +3,10 @@
 #include <string.h>
 
 double solve_explicit(double next, double actual, double prev, double time_interval);
-void explicit_method(double *res, double *initial, int N, double time_interval);
+void explicit_method(double* res, double* initial, int N, double time_interval);
 
-void print_double_vector(double *vector, int N);
-double calc_difference(double *res, double *initial, int N);
+void print_double_vector(double* vector, int N);
+double calc_difference(double* res, double* initial, int N);
 
 
 #ifndef abs
@@ -18,7 +18,7 @@ double calc_difference(double *res, double *initial, int N);
 #endif
 
 
-int main(int argc, char const *argv[])
+int main(int argc, char const* argv[])
 {
     if (argc < 2) {
         printf("Falta el time_interval\n");
@@ -27,8 +27,8 @@ int main(int argc, char const *argv[])
     int N = 11;
     double time_interval;
     sscanf(argv[1], "%lf", &time_interval);
-    double *initial = calloc(N, sizeof(double));
-    double *res = calloc(N, sizeof(double));
+    double* initial = calloc(N, sizeof(double));
+    double* res = calloc(N, sizeof(double));
 
     explicit_method(res, initial, N, time_interval);
 
@@ -39,7 +39,7 @@ int main(int argc, char const *argv[])
 }
 
 
-void print_double_vector(double *vector, int N)
+void print_double_vector(double* vector, int N)
 {
     for (int i = 0; i < N; ++i) {
         printf("%f ", vector[i]);
@@ -48,7 +48,7 @@ void print_double_vector(double *vector, int N)
 }
 
 
-double calc_difference(double *res, double *initial, int N)
+double calc_difference(double* res, double* initial, int N)
 {
     double max = 0;
     double temp;
@@ -62,7 +62,7 @@ double calc_difference(double *res, double *initial, int N)
     return max;
 }
 
-void explicit_method(double *res, double *initial, int N, double time_interval)
+void explicit_method(double* res, double* initial, int N, double time_interval)
 {
     //setting boundary conditions
 
@@ -86,7 +86,7 @@ void explicit_method(double *res, double *initial, int N, double time_interval)
 
 double solve_explicit(double next, double actual, double prev, double time_interval)
 {
-    const double K = 0.01; //??? Adimensionalizar
+    const double K = 0.01;
     const double int_len = 1.0 / 10.0;
     double res = (actual + time_interval * K  * ((next + prev - 2 * actual) / sqr(int_len)));
     return res;
