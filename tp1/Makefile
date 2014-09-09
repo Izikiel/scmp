@@ -1,5 +1,5 @@
 EXTRAFLAGS:= -Wall -Werror -pedantic --std=c99 -ggdb -O0
-EXE=explicit
+EXE=difusion_solvers
 
 .PHONY: all clean
 
