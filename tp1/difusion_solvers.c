@@ -138,11 +138,13 @@ double solve_implicit(double *actual, double *initial, int index, double time_in
     const double K = 0.01;
     const double int_len = 1.0 / 10.0;
     double alpha = 0.5;
-    double res = actual[index] + time_interval * K *
-                 (
-                     (alpha * (actual[index + 1] - 2 * actual[index] + actual[index - 1]))
-                     + ((1 - alpha) * (initial[index + 1] - 2 * initial[index] + initial[index - 1]))
-                 ) / sqr(int_len);
+    double res = (
+                K * (
+                        alpha * (time_interval/sqr(int_len)) * (actual[index+1]+actual[index-1]) 
+                        + (1-alpha) * (time_interval/sqr(int_len)) * (initial[index+1] - 2 * initial[index] + initial[index-1])
+                        + initial[index]
+                    )
+                )/ (1 + (2* K * alpha * time_interval)/sqr(int_len) );
 
     return res;
 }
