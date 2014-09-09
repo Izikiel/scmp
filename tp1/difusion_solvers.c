@@ -3,13 +3,13 @@
 #include <string.h>
 
 double solve_explicit(double next, double actual, double prev, double time_interval);
-void explicit_method(double* res, double* initial, int N, double time_interval);
+void explicit_method(double *res, double *initial, int N, double time_interval);
 
-void implicit_method(double* res, double* initial, int N, double time_interval);
-double solve_implicit(double next, double actual, double prev, double time_interval);
+void implicit_method(double *res, double *initial, int N, double time_interval);
+double solve_implicit(double *actual, double *initial, int index, double time_interval);
 
-void print_double_vector(double* vector, int N);
-double calc_difference(double* res, double* initial, int N);
+void print_double_vector(double *vector, int N);
+double calc_difference(double *res, double *initial, int N);
 
 #ifndef abs
 #define abs(val) ((val) < 0 ? -(val) : (val))
@@ -20,7 +20,7 @@ double calc_difference(double* res, double* initial, int N);
 #endif
 
 
-int main(int argc, char const* argv[])
+int main(int argc, char const *argv[])
 {
     if (argc < 3) {
         printf("Falta el solver a usar y el time_interval\n");
@@ -30,14 +30,13 @@ int main(int argc, char const* argv[])
     double time_interval;
     char solver = argv[1][0];
     sscanf(argv[2], "%lf", &time_interval);
-    double* initial = calloc(N, sizeof(double));
-    double* res = calloc(N, sizeof(double));
+    double *initial = calloc(N, sizeof(double));
+    double *res = calloc(N, sizeof(double));
 
 
     if (solver == 'E') {
         explicit_method(res, initial, N, time_interval);
-    }
-    else {
+    } else {
         implicit_method(res, initial, N, time_interval);
     }
 
@@ -48,7 +47,7 @@ int main(int argc, char const* argv[])
 }
 
 
-void print_double_vector(double* vector, int N)
+void print_double_vector(double *vector, int N)
 {
     for (int i = 0; i < N; ++i) {
         printf("%f ", vector[i]);
@@ -57,7 +56,7 @@ void print_double_vector(double* vector, int N)
 }
 
 
-double calc_difference(double* res, double* initial, int N)
+double calc_difference(double *res, double *initial, int N)
 {
     double max = 0;
     double temp;
@@ -71,7 +70,7 @@ double calc_difference(double* res, double* initial, int N)
     return max;
 }
 
-void explicit_method(double* res, double* initial, int N, double time_interval)
+void explicit_method(double *res, double *initial, int N, double time_interval)
 {
     //setting boundary conditions
 
@@ -103,10 +102,10 @@ double solve_explicit(double next, double actual, double prev, double time_inter
 
 
 
-void implicit_method(double* res, double* initial, int N, double time_interval)
+void implicit_method(double *res, double *initial, int N, double time_interval)
 {
     //setting boundary conditions
-    double* temp = calloc(N, sizeof(double));
+    double *temp = calloc(N, sizeof(double));
     temp[0] = initial[0] = res[0] = 10;
     temp[N - 1] = initial[N - 1] = res[N - 1] = -5;
 
@@ -123,7 +122,7 @@ void implicit_method(double* res, double* initial, int N, double time_interval)
                 res[i] = solve_implicit(res, initial, i, time_interval);
             }
 
-            gs_convergence = calc_difference(res, temp);
+            gs_convergence = calc_difference(res, temp, N);
 
             memcpy(temp, res, N * sizeof(double));
         }
@@ -134,10 +133,18 @@ void implicit_method(double* res, double* initial, int N, double time_interval)
     }
 }
 
-double solve_implicit(double* actual, double* initial, int index, double time_interval)
+double solve_implicit(double *actual, double *initial, int index, double time_interval)
 {
     const double K = 0.01;
     const double int_len = 1.0 / 10.0;
-    double res = (actual + time_interval * K  * ((next + prev - 2 * actual) / sqr(int_len)));
+    double alpha = 0.5;
+    double res = actual[index] + time_interval * K *
+                 (
+                     (alpha * (actual[index + 1] - 2 * actual[index] + actual[index - 1]))
+                     + ((1 - alpha) * (initial[index + 1] - 2 * initial[index] + initial[index - 1]))
+                 ) / sqr(int_len);
+
     return res;
 }
+
+
