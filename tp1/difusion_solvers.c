@@ -121,14 +121,12 @@ void implicit_method(double *res, double *initial, int N, double time_interval)
             for (int i = 1; i < N - 1; ++i) {
                 res[i] = solve_implicit(res, initial, i, time_interval);
             }
-
+  
             gs_convergence = calc_difference(res, temp, N);
-
             memcpy(temp, res, N * sizeof(double));
         }
 
         current_convergence = calc_difference(res, initial, N);
-
         memcpy(initial, res, N * sizeof(double));
     }
 }
@@ -141,9 +139,9 @@ double solve_implicit(double *actual, double *initial, int index, double time_in
     double res = (
                 K * (
                         alpha * (time_interval/sqr(int_len)) * (actual[index+1]+actual[index-1]) 
-                        + (1-alpha) * (time_interval/sqr(int_len)) * (initial[index+1] - 2 * initial[index] + initial[index-1])
-                        + initial[index]
-                    )
+                        + (1-alpha) * (time_interval/sqr(int_len)) * 
+                            (initial[index+1] - 2 * initial[index] + initial[index-1])                        
+                    ) + initial[index]
                 )/ (1 + (2* K * alpha * time_interval)/sqr(int_len) );
 
     return res;
