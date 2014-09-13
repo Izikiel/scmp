@@ -69,12 +69,6 @@ int main(int argc, char const* argv[])
 
     reverse_matrixY <<< dimGrid, dimBlockY >>>(d_matrix, N);
 
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            h_matrix[i * N + j] = 0;
-        }
-    }
-
     cudaCheck(
         cudaMemcpy(h_matrix, d_matrix, N * N * sizeof(int), cudaMemcpyDeviceToHost)
     );
