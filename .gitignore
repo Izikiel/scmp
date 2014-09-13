@@ -24,3 +24,5 @@
 *.hex
 explicit
 *.ipynb*
+*.DS_Store
+difusion_solvers
