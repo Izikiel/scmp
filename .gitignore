@@ -1,3 +1,8 @@
+# Misc
+*.sublime-*
+*.idea*
+*.DS_Store
+
 # Object files
 *.o
 *.ko
@@ -24,6 +29,4 @@
 *.hex
 explicit
 *.ipynb*
-*.DS_Store
 difusion_solvers
-*.idea*
