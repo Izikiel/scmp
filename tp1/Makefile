@@ -13,5 +13,5 @@ $(EXE): $(EXE).c
 all: $(EXE) 
 
 clean:
-	rm -f $(EXE) *.o *.dSYM
+	rm -rf $(EXE) *.o *.dSYM
 
