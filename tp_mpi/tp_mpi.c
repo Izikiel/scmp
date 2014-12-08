@@ -10,8 +10,8 @@
 
 double solve(double *actual, double *initial, int index, double time_interval, double alpha);
 void explicit_method( int N, double time_interval, double left, double right, double total_time);
-double calc_difference(double *res, double *initial, int N);
-void print_double_vector(double *vector, int N, int start, int stop);
+// double calc_difference(double *res, double *initial, int N);
+void print_double_vector(double *vector, int N, int start, int stop, FILE *f);
 
 int main(int argc, char const *argv[])
 {
@@ -44,9 +44,9 @@ int main(int argc, char const *argv[])
 
 
     if (id == 0) {
-        explicit_method(N, time_interval, 1, 0.1, 100);
+        explicit_method(N, time_interval, 1, 0, 100);
     } else if (id == 1) {
-        explicit_method(N, time_interval, 0.1, 0, 100);
+        explicit_method(N, time_interval, 0, 0, 100);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -65,13 +65,24 @@ void explicit_method( int N, double time_interval, double left, double right, do
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
     int dest = id ? 0 : 1;
-
     int tag = 0;
     MPI_Status status;
+
+    char file_name[20];
+    sprintf(file_name, "mpi_out_%d.txt", id);
+
+    FILE *out_data = fopen(file_name, "w");
+
+    int start = id ? 2 : 1;
+    int stop = N - (id ? 1 : 2);
+
+    int middle = id ? 1 : N - 2;
+    int edge = id ? 0 : N - 1;
 
 
     double *initial = calloc(N, sizeof(double));
     double *res = calloc(N, sizeof(double));
+
     if (id) {
         initial[1] = res[1] = left;
         initial[N - 1] = res[N - 1] = right;
@@ -80,84 +91,57 @@ void explicit_method( int N, double time_interval, double left, double right, do
         initial[N - 2] = res[N - 2] = right;
     }
 
-
-    double threshold_convergence = 0.0001;
-    double current_convergence = 10000;
-
-    const double K = 0.1;
-    const double int_len = 1.0 / 20.0;
-
     double actual_time = 0.0;
 
     while (actual_time < total_time) {
-        char flag;
-        if (id) {
-            printf("Proceso %d\n", id);
-            print_double_vector(res, N, 1, N);
-            printf("\n############################\n");
-            MPI_Send(&flag, 1, MPI_CHAR, dest, tag, MPI_COMM_WORLD);
-        } else {
-            MPI_Recv(&flag, 1, MPI_CHAR, dest, tag, MPI_COMM_WORLD, &status);
-            printf("Proceso %d\n", id);
-            print_double_vector(res, N, 0, N - 1);
-            printf("\n############################\n");
-        }
 
-        for (int i = id ? 2 : 1; i < (N - (id ? 1 : 2)); ++i) {
+        print_double_vector(res, N, start , stop + 1, out_data);
+
+        for (int i = start; i < stop; ++i) {
             res[i] = solve(res, initial, i, time_interval, 0);
         }
 
+        double val_s = id ? res[1] : res[N - 2];
+        double val_r;
+
         MPI_Barrier(MPI_COMM_WORLD);
 
-        //Meter mpi aca!
+        if (id) {
+            MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
+            MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
+        } else {
+            MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
+            MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
+        }
 
-        double val_s, val_r;
+        res[middle + (id ? -1 : 1)] = val_r;
+
+        res[middle] = solve(res, initial, middle, time_interval, 0);
+
+        val_s = res[middle];
 
         if (id) {
-            val_s = res[1];
-
             MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
             MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
-
-            res[0] = val_r;
-
-            res[1] = solve(res, initial, 1, time_interval, 0);
-
-            val_s = res[1];
-
-            MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
-            MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
-
-            res[1] = 0.1 + (val_s + val_r) / 2.0;
-
         } else {
-            val_s = res[N - 2];
-
             MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
             MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
+        }
 
-            res[N - 1] = val_r;
-
-            res[N - 2] = solve(res, initial, N - 2, time_interval, 0);
-            val_s = res[N - 2];
-
-            MPI_Recv(&val_r, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD, &status);
-            MPI_Send(&val_s, 1, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD);
-
-            res[N - 2] = 0.1 + (val_s + val_r) / 2.0;
-
+        if ((val_r + val_s) > 0.0) {
+            res[middle] = 0.1 + (val_s + val_r) / 2.0;
         }
 
         MPI_Barrier(MPI_COMM_WORLD);
-
-        current_convergence = calc_difference(res, initial, N);
 
         memcpy(initial, res, N * sizeof(double));
 
         actual_time += time_interval;
     }
+
     free(res);
     free(initial);
+    fclose(out_data);
 }
 
 
@@ -193,10 +177,10 @@ double solve(double *actual, double *initial, int index, double time_interval, d
            ) / (1 + (2 * K * alpha * time_interval) / sqr(int_len) );
 }
 
-void print_double_vector(double *vector, int N, int start, int stop)
+void print_double_vector(double *vector, int N, int start, int stop, FILE *f)
 {
     for (int i = start; i < stop; ++i) {
-        printf("%f ", vector[i]);
+        fprintf(f, "%f ", vector[i]);
     }
-    //printf("\n");
+    fprintf(f, "\n");
 }
