@@ -83,19 +83,14 @@ void explicit_method( int N, double time_interval, double left, double right, do
     double *initial = calloc(N, sizeof(double));
     double *res = calloc(N, sizeof(double));
 
-    if (id) {
-        initial[1] = res[1] = left;
-        initial[N - 1] = res[N - 1] = right;
-    } else {
-        initial[0] = res[0] = left;
-        initial[N - 2] = res[N - 2] = right;
-    }
+    initial[id] = res[id] = left;
+    initial[N - 2 + id] = res[N - 2 + id] = right;
 
     double actual_time = 0.0;
 
     while (actual_time < total_time) {
 
-        print_double_vector(res, N, start , stop + 1, out_data);
+        print_double_vector(res, N, id , stop + 1, out_data);
 
         for (int i = start; i < stop; ++i) {
             res[i] = solve(res, initial, i, time_interval, 0);
