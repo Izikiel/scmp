@@ -7,15 +7,15 @@
 #define sqr(x) (x*x)
 #endif
 
-double solve(double* actual, double* initial, int index, double time_interval, double alpha);
+double solve(double* actual, double* initial, int index, double time_interval, double alpha, double int_len);
 void explicit_method_mpi( int N, double time_interval, double left, double right, double total_time);
-void explicit_method( int N, double time_interval);
-void print_double_vector(double* vector, int N, FILE* f);
+void explicit_method( int N, double time_interval, double total_time);
+void print_double_vector(double* vector, int start, int N, FILE* f);
 
 int main(int argc, char const* argv[])
 {
-    if (argc < 3) {
-        printf("Falta modo si serial o paralelo (S o P), e intervalo de tiempo\n");
+    if (argc < 4) {
+        printf("Falta modo si serial o paralelo (S o P), paso tiempo, tiempo total\n");
         return -1;
     }
 
@@ -23,6 +23,9 @@ int main(int argc, char const* argv[])
 
     double time_interval;
     sscanf(argv[2], "%lf", &time_interval);
+
+    double total_time;
+    sscanf(argv[3], "%lf", &total_time);
 
     if (mode == 'P') {
         int id;
@@ -43,12 +46,10 @@ int main(int argc, char const* argv[])
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (id == 0) {
-            explicit_method_mpi(N, time_interval, 1, 0.1, 100);
-        }
-        else if (id == 1) {
-            explicit_method_mpi(N, time_interval, 0.1, 0, 100);
-        }
+        double left = id ? 0.1 : 1;
+        double right = id ? 0 : 0.1;
+
+        explicit_method_mpi(N, time_interval, left, right, total_time);
 
         MPI_Barrier(MPI_COMM_WORLD);
 
@@ -56,14 +57,14 @@ int main(int argc, char const* argv[])
     }
     else {
         int N = 20;
-        explicit_method(N, time_interval);
+        explicit_method(N, time_interval, total_time);
     }
 
 
     return 0;
 }
 
-void explicit_method( int N, double time_interval)
+void explicit_method( int N, double time_interval, double total_time)
 {
     //setting boundary conditions
     double* initial = calloc(N, sizeof(double));
@@ -80,11 +81,11 @@ void explicit_method( int N, double time_interval)
     sprintf(file_name, "serial_out.txt");
     FILE* out_data = fopen(file_name, "w");
 
-    while (actual_time < 100) {
-        print_double_vector(res, N, out_data);
+    while (actual_time < total_time) {
+        print_double_vector(res, 0, N, out_data);
 
         for (int i = 1; i < N - 1; ++i) {
-            res[i] = solve(res, initial, i, time_interval, 0);
+            res[i] = solve(res, initial, i, time_interval, 0, 20.0 / ((double) N));
         }
 
         res[N / 2] = 0.1 + (res[-1 + N / 2] + res[1 + N / 2]) / 2.0;
@@ -129,10 +130,10 @@ void explicit_method_mpi( int N, double time_interval, double left, double right
 
     while (actual_time < total_time) {
 
-        print_double_vector(res, N, out_data);
+        print_double_vector(res, id, N, out_data);
 
         for (int i = start; i < stop; ++i) {
-            res[i] = solve(res, initial, i, time_interval, 0);
+            res[i] = solve(res, initial, i, time_interval, 0, 20.0 / ((double) (2 * (N - 1)) ) );
         }
 
         double val_s = id ? res[1] : res[N - 2];
@@ -161,10 +162,9 @@ void explicit_method_mpi( int N, double time_interval, double left, double right
     fclose(out_data);
 }
 
-inline double solve(double* actual, double* initial, int index, double time_interval, double alpha)
+inline double solve(double* actual, double* initial, int index, double time_interval, double alpha, double int_len)
 {
     const double K = 0.1;
-    const double int_len = 1;
     return (
                K * (time_interval / sqr(int_len)) * (
                    alpha *  (actual[index + 1] + actual[index - 1])
@@ -173,9 +173,9 @@ inline double solve(double* actual, double* initial, int index, double time_inte
            ) / (1 + (2 * K * alpha * time_interval) / sqr(int_len) );
 }
 
-void print_double_vector(double* vector, int N, FILE* f)
+void print_double_vector(double* vector, int start, int N, FILE* f)
 {
-    for (int i = 0; i < N; ++i) {
+    for (int i = start; i < N; ++i) {
         fprintf(f, "%f ", vector[i]);
     }
     fprintf(f, "\n");
