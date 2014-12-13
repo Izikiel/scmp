@@ -19,7 +19,7 @@ def parse_data(filename):
             i += 1
     return (x,y,z)
 
-def plot(filename):
+def plot(filename, show=0):
     x,y,z = parse_data(filename)
     fig = plt.figure(figsize=(10,10), linewidth=1)
     ax = fig.add_subplot(111, projection='3d')
@@ -30,10 +30,14 @@ def plot(filename):
     ax.set_xlabel(p)
     ax.set_ylabel(time)
     ax.set_zlabel(t)
-    # plt.show()
-    plt.savefig("out.svg")
-
+    if show:
+        plt.show()
+    else:
+        plt.savefig("out.svg")
 
 
 if __name__ == '__main__':
-    plot(sys.argv[1])
+    if len(sys.argv) == 3:
+        plot(sys.argv[1], True)
+    elif len(sys.argv) == 2:
+        plot(sys.argv[1], False)

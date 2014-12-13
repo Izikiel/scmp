@@ -7,7 +7,7 @@
 #define sqr(x) (x*x)
 #endif
 
-double solve(double* actual, double* initial, int index, double time_interval, double alpha, double int_len);
+double solve(double* actual, double* initial, int index, double delta_t, double alpha, double delta_x);
 void explicit_method_mpi( int N, double time_interval, double left, double right, double total_time);
 void explicit_method( int N, double time_interval, double total_time);
 void print_double_vector(double* vector, int start, int N, FILE* f);
@@ -64,7 +64,7 @@ int main(int argc, char const* argv[])
     return 0;
 }
 
-void explicit_method( int N, double time_interval, double total_time)
+void explicit_method( int N, double delta_t, double total_time)
 {
     //setting boundary conditions
     double* initial = calloc(N, sizeof(double));
@@ -73,26 +73,26 @@ void explicit_method( int N, double time_interval, double total_time)
     initial[0] = res[0] = 1;
     initial[N - 1] = res[N - 1] = 0;
 
-    initial[N / 2] = res[N / 2] = 0.1;
+    int half = N / 2 - 1;
 
-    double actual_time = 0.0;
+    initial[half] = res[half] = 0.1;
 
     char file_name[20];
     sprintf(file_name, "serial_out.txt");
     FILE* out_data = fopen(file_name, "w");
 
-    while (actual_time < total_time) {
+    for (double actual_time = 0.0; actual_time < total_time; actual_time += delta_t) {
         print_double_vector(res, 0, N, out_data);
 
+        double delta_x = 0.4; // 20.0 / ((double) N);
+
         for (int i = 1; i < N - 1; ++i) {
-            res[i] = solve(res, initial, i, time_interval, 0, 20.0 / ((double) N));
+            res[i] = solve(res, initial, i, delta_t, 0, delta_x);
         }
 
-        res[N / 2] = 0.1 + (res[-1 + N / 2] + res[1 + N / 2]) / 2.0;
+        res[half] = 0.1 + (res[half - 1] + res[half + 1]) / 2.0;
 
         memcpy(initial, res, N * sizeof(double));
-
-        actual_time += time_interval;
     }
     free(res);
     free(initial);
@@ -100,7 +100,7 @@ void explicit_method( int N, double time_interval, double total_time)
 }
 
 
-void explicit_method_mpi( int N, double time_interval, double left, double right, double total_time)
+void explicit_method_mpi( int N, double delta_t, double left, double right, double total_time)
 {
     //setting boundary conditions
     int id;
@@ -126,14 +126,13 @@ void explicit_method_mpi( int N, double time_interval, double left, double right
     initial[0] = res[0] = left;
     initial[N - 1] = res[N - 1] = right;
 
-    double actual_time = 0.0;
-
-    while (actual_time < total_time) {
-
+    for (double actual_time = 0; actual_time < total_time; actual_time += delta_t) {
         print_double_vector(res, id, N, out_data);
 
+        double delta_x = 0.4; // 20.0 / ((double) N);
+
         for (int i = start; i < stop; ++i) {
-            res[i] = solve(res, initial, i, time_interval, 0, 20.0 / ((double) (2 * (N - 1)) ) );
+            res[i] = solve(res, initial, i, delta_t, 0, delta_x);
         }
 
         double val_s = id ? res[1] : res[N - 2];
@@ -153,8 +152,6 @@ void explicit_method_mpi( int N, double time_interval, double left, double right
         res[middle] = 0.1 + (val_s + val_r) / 2.0;
 
         memcpy(initial, res, N * sizeof(double));
-
-        actual_time += time_interval;
     }
 
     free(res);
@@ -162,15 +159,16 @@ void explicit_method_mpi( int N, double time_interval, double left, double right
     fclose(out_data);
 }
 
-inline double solve(double* actual, double* initial, int index, double time_interval, double alpha, double int_len)
+inline double solve(double* actual, double* initial, int index, double delta_t, double alpha, double delta_x)
 {
     const double K = 0.1;
+    const double r = K * (delta_t / sqr(delta_x));
     return (
-               K * (time_interval / sqr(int_len)) * (
+               r * (
                    alpha *  (actual[index + 1] + actual[index - 1])
                    + (1 - alpha) * (initial[index + 1] - 2 * initial[index] + initial[index - 1])
                ) + initial[index]
-           ) / (1 + (2 * K * alpha * time_interval) / sqr(int_len) );
+           ) / (1 + (2 * K * alpha * delta_t) / sqr(delta_x) );
 }
 
 void print_double_vector(double* vector, int start, int N, FILE* f)
