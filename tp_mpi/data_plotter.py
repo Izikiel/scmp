@@ -14,7 +14,7 @@ def parse_data(filename):
             values = map(float, l.strip().split(" "))
             for pos, val in enumerate(values):
                 x.append(pos)
-                y.append(i)
+                y.append(i/10.0)
                 z.append(val)
             i += 1
     return (x,y,z)
@@ -24,16 +24,17 @@ def plot(filename, show=0):
     fig = plt.figure(figsize=(10,10), linewidth=1)
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(x,y,z, "x")
-    t = "Concentration"
-    p = "Position"
-    time = "Time"
+    t = "Concentracion (g/ml)"
+    p = "Posicion (cm)"
+    time = "Tiempo (S)"
+    ax.axis([0, 20, 0, 100])
     ax.set_xlabel(p)
     ax.set_ylabel(time)
     ax.set_zlabel(t)
     if show:
         plt.show()
     else:
-        plt.savefig("out.svg")
+        plt.savefig("out.png")
 
 
 if __name__ == '__main__':

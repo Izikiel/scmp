@@ -30,8 +30,8 @@ def plot_steps(filename):
 		ax = fig.add_subplot(111)
 		ax.plot(l)
 		ax.axis([0, 20, -1, 2])
-		ax.yaxis.set_label_text("Concentration")
-		ax.xaxis.set_label_text("Position")
+		ax.yaxis.set_label_text("Concentracion (g/ml)")
+		ax.xaxis.set_label_text("Posicion (cm)")
 		fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
 		fig.clf()
 		i += 1
