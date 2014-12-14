@@ -2,9 +2,11 @@ import sys
 
 import matplotlib.pyplot as plt
 from math import log
+from joblib import Parallel, delayed
+from multiprocessing import cpu_count
 
-l10 = lambda x: int(log(x, 10)) if x > 9 else 0
-zeroes = "0000000"
+l10 = lambda x: int(round(log(x, 10))) if x > 9 else 0
+zeroes = "0000"
 
 def merge_files(file_a, file_b):
 	with open(file_a, "r") as a:
@@ -21,20 +23,31 @@ def parse_data(filename):
 			data.append(map(float, l.strip().split()))
 	return data
 
+def plot_data_line(l, i):
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	ax.plot(l)
+	ax.axis([0, 20, -1, 2])
+	ax.yaxis.set_label_text("Concentracion (g/ml)")
+	ax.xaxis.set_label_text("Posicion (cm)")
+	fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
+	plt.close(fig)
+	# fig.clf()
 
 def plot_steps(filename):
 	data = parse_data(filename)
-	i = 0
-	fig = plt.figure()
-	for l in data:
-		ax = fig.add_subplot(111)
-		ax.plot(l)
-		ax.axis([0, 20, -1, 2])
-		ax.yaxis.set_label_text("Concentracion (g/ml)")
-		ax.xaxis.set_label_text("Posicion (cm)")
-		fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
-		fig.clf()
-		i += 1
+	Parallel(n_jobs=cpu_count())(delayed(plot_data_line)(l, i) for i, l in enumerate(data))
+	# i = 0
+	# fig = plt.figure()
+	# for l in data:
+	# 	ax = fig.add_subplot(111)
+	# 	ax.plot(l)
+	# 	ax.axis([0, 20, -1, 2])
+	# 	ax.yaxis.set_label_text("Concentracion (g/ml)")
+	# 	ax.xaxis.set_label_text("Posicion (cm)")
+	# 	fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
+	# 	fig.clf()
+	# 	i += 1
 
 
 if __name__ == '__main__':
