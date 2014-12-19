@@ -5,8 +5,8 @@ from math import log
 from joblib import Parallel, delayed
 from multiprocessing import cpu_count
 
-l10 = lambda x: int(round(log(x, 10))) if x > 9 else 0
-zeroes = "0000"
+l10 = lambda x: int(log(x, 10)) if x > 9 else 0
+zeroes = "000"
 
 def merge_files(file_a, file_b):
 	with open(file_a, "r") as a:
@@ -30,7 +30,10 @@ def plot_data_line(l, i):
 	ax.axis([0, 20, -1, 2])
 	ax.yaxis.set_label_text("Concentracion (g/ml)")
 	ax.xaxis.set_label_text("Posicion (cm)")
-	fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
+	if i < 1000:
+		fig.savefig("step_%s%i.png"%(zeroes[l10(i):],i))
+	else:
+		fig.savefig("step_%i.png"%(i))
 	plt.close(fig)
 	# fig.clf()
 
